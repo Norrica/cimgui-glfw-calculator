@@ -117,7 +117,7 @@ void gui_update() {
   if (igButton("C", size)) {
     buf[0] = '\0';
     show_calc = 0;
-    calc_error = 0;
+    error_message[0] = 0;
   }
   igSameLine(0, spacing);
   if (igButton("=", size)) {
@@ -165,7 +165,7 @@ void gui_update() {
                      (ImVec2) {0, 0});
   igSetNextWindowSize((struct ImVec2) {WIN_WIDTH / 4, WIN_HEIGHT / 4},
                       ImGuiCond_Appearing);
-  if (show_calc && !calc_error) {
+  if (show_calc && error_message[0]!=0) {
     igBegin("Graph", NULL, 0);
     ImVec2 region = igGetContentRegionAvail();
     igPlotLines("Res",

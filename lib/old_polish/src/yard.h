@@ -19,18 +19,18 @@ struct operator_type {
   double (*eval)(double a1, double a2);
 };
 
-void push_opstack(struct operator_type *op);
+void push_opstack(struct operator_type *op, char *error_message);
 
-void push_numstack(double num);
+void push_numstack(double num, char *error_message);
 
-double pop_numstack();
+double pop_numstack(char *error_message);
 
-void shunt_op(struct operator_type *op);
+void shunt_op(struct operator_type *op, char *error_message);
 
 int isdigit_or_decimal(int c);
 
-double yard(char *s, int *is_error);
+double yard(char *s, char *error_message);
 
-struct operator_type *pop_opstack();
+struct operator_type *pop_opstack(char *error_message);
 
 #endif  // SRC_YARD_H_
