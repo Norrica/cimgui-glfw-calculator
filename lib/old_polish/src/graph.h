@@ -5,11 +5,7 @@
 #ifndef APP_LIB_OLD_POLISH_SRC_GRAPH_H_
 #define APP_LIB_OLD_POLISH_SRC_GRAPH_H_
 
-int build_graph(int x_left,
-                int x_right,
-                char *s,
-                double *result_arr,
-                char *error_mes);
+float * build_graph(int x_left, int x_right, char *s, char *error_message);
 
 double calc_res(char *s, char *error_message);
 

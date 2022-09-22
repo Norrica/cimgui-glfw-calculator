@@ -8,22 +8,18 @@
 #include <math.h>
 #include <limits.h>
 #include <time.h>
-
+#include <stdbool.h>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <input.h>
 #include <graph.h>
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
-
 #include <cimgui.h>
-//#include "imgui_impl_glfw.h"
-//#include "imgui_impl_opengl3.h"
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-
-//#define WINDOW_WIDTH 1200
-//#define WINDOW_HEIGHT 800
+#include <float.h>
+#include <yard.h>
 int WIN_WIDTH;
 int WIN_HEIGHT;
 static void error_callback(int e, const char *d) {
@@ -32,13 +28,14 @@ static void error_callback(int e, const char *d) {
          d);
 }
 
+//static float Saw(void*j,int i) { return (i & 1) ? 1.0f : -1.0f; }
+
 /* Platform */
 static GLFWwindow *win;
 struct ImGuiContext *ctx;
 struct ImGuiIO *io;
 
 void gui_init() {
-  // IMGUI_CHECKVERSION();
   ctx = igCreateContext(NULL);
   io = igGetIO();
 
@@ -61,22 +58,43 @@ void gui_render() {
   ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 }
 
-static int Filter(ImGuiInputTextCallbackData *data) {
+int Filter(ImGuiInputTextCallbackData *data) {
+
   if (data->EventChar < 256
-      && strchr("sincostansqrtlng+-*/^%x", (char) data->EventChar))
+      && strchr("sincostansqrtlng+-*/^%x1234567890().",
+                (char) (data->EventChar))) {
     return 0;
+  }
   return 1;
 }
 
-static int error_message[256];
+float max(const float *arr, int n) {
+  float max = DBL_MIN;
+  for (int i = 0; i < n; ++i) {
+    if (arr[i] > max)max = arr[i];
+  }
+  return max;
+}
+float min(const float *arr, int n) {
+  float min = arr[0];
+  for (int i = 0; i < n; ++i) {
+    if (arr[i] < min)min = arr[i];
+  }
+  return min;
+}
+static char error_message[256];
 static int show_calc = 0;
 int ce = 1;
-static int left_x = -100;
-static int right_x = 100;
-static double graph_points_x[200];
-static double graph_points_y[200];
-#include <yard.h>
+static int left_x = -(2000000 / 2);
+static int right_x = 2000000 / 2;
+static float graph_points_x;
+static float graph_points_y[2000000] = {};
 
+static float getter(void *j, int i) {
+  return graph_points_y[i];
+}
+
+#define IM_ARRAYSIZE(_ARR)          ((int)(sizeof(_ARR) / sizeof(*(_ARR))))       // Size of a static C-style array. Don't use on pointers!
 
 void gui_update() {
   ImGui_ImplOpenGL3_NewFrame();
@@ -87,101 +105,210 @@ void gui_update() {
   igSetNextWindowSize((struct ImVec2) {WIN_WIDTH / 2, WIN_HEIGHT / 2},
                       ImGuiCond_Appearing);
 
-  igBegin("Calculator", NULL, 0);
   static char buf[256];
-  igInputText("", buf, 255,
-              ImGuiInputTextFlags_AutoSelectAll |
-                  ImGuiInputTextFlags_CharsNoBlank, &Filter, NULL);
-  igSameLine(0, 5);
-  if (error_message)
-    igTextColored((ImVec4) {1, 0, 0, 1}, "%s", error_message);
-  //igSeparator();
-  int c_count = 3;
-  float but_size_w = 80;//igGetWindowWidth() * ((float) c_count / 10);
-  float but_size_h = 80;//igGetWindowHeight() * (((float) c_count - 3) / 10);
-  igColumns(c_count, "test", 1);
-  ImVec2 size = {but_size_w, but_size_h};
-  float spacing = 5;
-
-  igSeparator();
-  for (int i = 0; i < 10; ++i) {
-    if ((i % 3) != 0)
-      igSameLine(0, spacing);
-    char l[2];
-    snprintf(l, 2, "%d", i);
-    if (igButton(l, size)) {
-      strcat(buf, l);
-    }
-  }
-  igSameLine(0, spacing);
-  if (igButton("C", size)) {
-    buf[0] = '\0';
-    show_calc = 0;
-    error_message[0] = 0;
-  }
-  igSameLine(0, spacing);
-  if (igButton("=", size)) {
-    if (buf[0] != '\0') {
-      if (contains_x(buf)) {
-        show_calc = 1;
-        build_graph(-100, 100, buf, graph_points_y, error_message);
-      } else {
-        sprintf(buf, "%lf", calc_res(buf, error_message));
+  //error_message[0]=0;
+  if (igBegin("Calculator", NULL, 0)) {
+    if (igIsKeyPressed('=', 0) && (igGetIO()->KeyShift))
+      strcat(buf, "+");
+    for (int i = 48; i < 58; ++i) {
+      if (!igGetIO()->KeyShift) {
+        if (igIsKeyPressed(i, 1)) {
+          char c = (char) i;
+          strncat(buf, &c, 1);
+        }
+        if (igIsKeyPressed(i + 320 - 48, 0)) {
+          char c = (char) i;
+          strncat(buf, &c, 1);
+        }
+      } else if (igIsKeyPressed(i, 0)) {
+        if (i == '5') {
+          strcat(buf, "%");
+        }
+        if (i == '6') {
+          strcat(buf, "^");
+        }
+        if (i == '8') {
+          strcat(buf, "*");
+        }
+        if (i == '9') {
+          strcat(buf, "(");
+        }
+        if (i == '0') {
+          strcat(buf, ")");
+        }
       }
     }
-    //TODO check for x
-    // TODO invoke calc
-    // TODO show graph if x
-  }
-  igNextColumn();
-  char *ops = "()+-*/^%";
-  for (int i = 0; i < 8; ++i) {
-    if ((i % 3) != 0)
-      igSameLine(0, spacing);
-    char l[2];
-    snprintf(l, 2, "%c", ops[i]);
-    if (igButton(l, size)) {
-      strcat(buf, l);
+    char ops3[] = "SINCOTAQRLGX";
+    for (int i = 0; i < strlen(ops3); ++i) {
+      if (igIsKeyPressed(ops3[i], 0)) {
+        char s = ops3[i] + 32;
+        strncat(buf, &s, 1);
+      }
     }
-  }
-  //igSeparator();
-  igNextColumn();
-  char *ops2[] =
-      {"sin", "cos", "tan", "asin", "acos", "atan", "sqrt", "log", "ln", "x"};
-  for (int i = 0; i < 9; ++i) {
-    if ((i % 3) != 0)
-      igSameLine(0, spacing);
-    char l[5];
-    snprintf(l, 5, "%s", ops2[i]);
-    if (igButton(l, size)) {
-      strcat(buf, l);
+    if (igIsKeyPressed(259, 0)) {
+      buf[strlen(buf) - 1] = 0;
     }
-  }
-  igNextColumn();
-  igEnd();
+    //float textsize = igCalcTextSize(buf, NULL, false, 0).x;
+    //igSetCursorPosX(igGetContentRegionAvail().x / 2 - textsize / 2);
+    igInputText("", buf, 255,
+                ImGuiInputTextFlags_AutoSelectAll
+                    | ImGuiInputTextFlags_CharsNoBlank
+                    | ImGuiInputTextFlags_CallbackCharFilter, &Filter, NULL);
+    igSameLine(0, 5);
+    if (error_message[0] != 0)
+      igTextColored((ImVec4) {1, 0, 0, 1}, "%s", error_message);
+    int c_count = 3;
+    float but_size_w = 80;
+    float but_size_h = 80;
+    igColumns(c_count, "test", 1);
+    ImVec2 size = {but_size_w, but_size_h};
+    float spacing = 5;
 
-  igSetNextWindowPos((ImVec2) {WIN_WIDTH / 2, WIN_HEIGHT / 2},
+    igSeparator();
+    for (int i = 0; i < 10; ++i) {
+      if ((i % 3) != 0)
+        igSameLine(0, spacing);
+      char l[2];
+      snprintf(l, 2, "%d", i);
+      if (igButton(l, size)) {
+        strcat(buf, l);
+      }
+    }
+    igSameLine(0, spacing);
+    if (igButton("C", size) || igIsKeyPressed(261, 0)) {
+      buf[0] = '\0';
+      show_calc = 0;
+      error_message[0] = 0;
+    }
+    igSameLine(0, spacing);
+    if (igButton(".", size)) {
+      strcat(buf, ".");
+    }
+    igNextColumn();
+    char *ops = "()+-*/^%=";
+    for (int i = 0; i < 8; ++i) {
+      if ((i % 3) != 0)
+        igSameLine(0, spacing);
+      char l[2];
+      snprintf(l, 2, "%c", ops[i]);
+      if (igButton(l, size)) {
+        strcat(buf, l);
+      }
+    }
+    igSameLine(0, spacing);
+
+    if ((igButton("=", size)
+        || (igIsKeyPressed('=', 0) && !(igGetIO()->KeyShift)))
+        || igIsKeyPressed(336, 0)
+        || igIsKeyPressed(335, 0)
+        || igIsKeyPressed(257, 0)
+        ) {
+      if (buf[0] != '\0') {
+        if (contains_x(buf)) {
+          show_calc = 1;
+
+          char *ss = truncate_trig(buf);  //  contains 'x'
+          char *sss = str_replace(ss, "x", "%lf");
+          for (int x_count = left_x, i = 0; x_count < right_x;
+               x_count += 1, i++) {
+            char *str = format_x(sss, x_count);
+            graph_points_y[i] = yard(str, error_message);
+            free(str);
+            if (*error_message != '\0') {
+              break;
+            }
+          }
+          free(sss);
+          free(ss);
+          show_calc = *error_message == '\0';
+        } else {
+          sprintf(buf, "%lf", calc_res(buf, error_message));
+        }
+
+      }
+    }
+
+    igNextColumn();
+    char *ops2[] =
+        {"sin", "cos", "tan", "asin", "acos", "atan", "sqrt", "log", "ln", "x"};
+
+    for (int i = 0; i < 9; ++i) {
+      if ((i % 3) != 0)
+        igSameLine(0, spacing);
+      char l[5];
+      snprintf(l, 5, "%s", ops2[i]);
+      if (igButton(l, size)) {
+        strcat(buf, l);
+      }
+    }
+    igNextColumn();
+
+  }
+
+  igEnd();
+  igSetNextWindowPos((ImVec2) {WIN_WIDTH / 2, 0},
                      ImGuiCond_Appearing,
-                     (ImVec2) {0, 0});
-  igSetNextWindowSize((struct ImVec2) {WIN_WIDTH / 4, WIN_HEIGHT / 4},
+                     (ImVec2) {0, 0}
+  );
+  igSetNextWindowSize((struct ImVec2) {
+                          WIN_WIDTH / 2, WIN_HEIGHT / 2},
                       ImGuiCond_Appearing);
-  if (show_calc && error_message[0]!=0) {
+//show_calc = 1;
+  if (show_calc) {
+    float n = min(graph_points_y, right_x - left_x);
+    float x = max(graph_points_y, right_x - left_x);
     igBegin("Graph", NULL, 0);
-    ImVec2 region = igGetContentRegionAvail();
-    igPlotLines("Res",
-                (const float *) graph_points_y,
-                200,
-                -100,
-                "",
-                -100,
-                100,
-                region,
-                0);
+    igLabelText("min", "%f", n);
+    igSameLine(0, 5);
+    igLabelText("max", "%f", x);
+    static int display_count = 200000;
+    display_count = right_x - left_x;
+    igSliderInt("Left", &left_x, -1000000, 0, "%d");
+    igDragInt("##Left", &left_x, 1.f, -1000000, 0, "%d");
+    if (igIsItemDeactivatedAfterEdit()) {
+      char *ss = truncate_trig(buf);  //  contains 'x'
+      char *sss = str_replace(ss, "x", "%lf");
+      for (int i = left_x, j = 0; i < right_x; i++) {
+        char *str = format_x(sss, i);
+        graph_points_y[j++] = yard(str, error_message);
+        free(str);
+      }
+      free(ss);
+      free(sss);
+    }
+    igSliderInt("Right", &right_x, 0, 1000000, "%d");
+
+    igDragInt("##Right", &right_x, 1.f, 0, 1000000, "%d");
+    if (igIsItemDeactivatedAfterEdit()) {
+      char *ss = truncate_trig(buf);  //  contains 'x'
+      char *sss = str_replace(ss, "x", "%lf");
+      for (int i = left_x, j = 0; i < right_x; i++) {
+        char *str = format_x(sss, i);
+        graph_points_y[j++] = yard(str, error_message);
+        free(str);
+      }
+      free(ss);
+      free(sss);
+    }
+    display_count = right_x - left_x;
+    ImVec2 size = igGetContentRegionAvail();
+    igPlotLinesFnPtr("Lines",
+                     &getter,
+                     NULL,
+                     display_count,
+                     0,
+                     NULL,
+                     MAXFLOAT,
+                     MAXFLOAT,
+                     size
+    );
+
+    igSeparator();
     igEnd();
   }
-  // // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway.
-  // // Here we just want to make the demo initial state a bit more friendly!
-  // igSetNextWindowPos((struct ImVec2){0,0}, ImGuiCond_FirstUseEver,(struct ImVec2){0,0} );
+// // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway.
+// // Here we just want to make the demo initial state a bit more friendly!
+// igSetNextWindowPos((struct ImVec2){0,0}, ImGuiCond_FirstUseEver,(struct ImVec2){0,0} );
   igShowDemoWindow(NULL);
 }
 
@@ -235,7 +362,6 @@ int main(int argc, char **argv) {
 
     glfwSwapBuffers(win);
   }
-
   gui_terminate();
   glfwTerminate();
 

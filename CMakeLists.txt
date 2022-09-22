@@ -42,6 +42,7 @@ include_directories(
         ${linmath}
         ${glfw}
         ${glfw}/include/
+        lib/old_polish/src
 )
 
 add_subdirectory(${glfw})
@@ -65,6 +66,21 @@ file(GLOB gl3w_files "${gl3w}/GL/*.c")
 
 file(GLOB glfw_files
         "${glfw}/src/*.c")
+
+add_library(yard
+        ${CMAKE_SOURCE_DIR}/lib/old_polish/src/operations.c
+        ${CMAKE_SOURCE_DIR}/lib/old_polish/src/graph.c
+        ${CMAKE_SOURCE_DIR}/lib/old_polish/src/input.c
+        ${CMAKE_SOURCE_DIR}/lib/old_polish/src/yard.c
+        )
+
+add_executable(yard_test
+        ${CMAKE_SOURCE_DIR}/lib/old_polish/src/main.c)
+target_link_libraries(
+        yard_test
+        yard
+)
+
 add_executable(
         ${project_name}
         ${source_files}
@@ -87,6 +103,7 @@ target_link_libraries(
         cimgui
         glfw
         ${GLFW_LIBRARIES}
+        yard
 
 )
 

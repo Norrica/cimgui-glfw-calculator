@@ -15,7 +15,7 @@ struct operator_type operators[] = {
 
     {'+', 5, LEFT, 0, eval_add}, {'-', 5, LEFT, 0, eval_sub},
     {'*', 7, LEFT, 0, eval_mul}, {'/', 7, LEFT, 0, eval_div},
-    {'^', 9, RIGHT, 0, eval_pow}, {'%', 7, LEFT, 0, eval_mod},
+    {'^', 9, LEFT, 0, eval_pow}, {'%', 7, LEFT, 0, eval_mod},
     {'~', 10, RIGHT, 1, eval_neg}, {'s', 10, RIGHT, 1, eval_sin},
     {'c', 10, RIGHT, 1, eval_cos}, {'t', 10, RIGHT, 1, eval_tan},
     {'b', 10, RIGHT, 1, eval_asin}, {'d', 10, RIGHT, 1, eval_acos},
@@ -65,7 +65,7 @@ void push_numstack(double num, char *error_message) {
 double pop_numstack(char *error_message) {
   if (!num_stack_size) {
     strcpy(error_message, "ERROR: Number stack empty");
-
+    return NAN;
   }
   return numstack[--num_stack_size];
 }
@@ -140,7 +140,7 @@ int isdigit_or_decimal(int c) {
     return 0;
 }
 
-double yard(char *s, char *error_message) {
+float yard(char *s, char *error_message) {
   num_stack_size = 0;
   oper_stack_size = 0;
   char *expr;
@@ -168,6 +168,50 @@ double yard(char *s, char *error_message) {
               break;
             case 'x':op = getop('x');
               break;
+            case '+':
+              op = getop('+');
+              break;
+
+            case '*':
+              op = getop('*');
+              break;
+            case '/':
+              op = getop('/');
+              break;
+            case '^':
+              op = getop('^');
+              break;
+            case '%':
+              op = getop('%');
+              break;
+            case '~':
+              op = getop('~');
+              break;
+            case 'b':
+              op = getop('b');
+              break;
+            case 'd':
+              op = getop('d');
+              break;
+            case 'e':
+              op = getop('e');
+              break;
+            case 'n':
+              op = getop('n');
+              break;
+            case 'l':
+              op = getop('l');
+              break;
+            case 'q':
+              op = getop('q');
+              break;
+            //case '(':
+            //  op = getop('(');
+            //  break;
+            //case ')':
+            //  op = getop(')');
+            //  break;
+
             default:break;
           }
         }
@@ -216,9 +260,7 @@ double yard(char *s, char *error_message) {
 
     return NAN;
   }
-//    printf("%lf",numstack[0]);
-  return numstack[0];
 
+  return (float)numstack[0];
 
-//    return EXIT_SUCCESS;
 }

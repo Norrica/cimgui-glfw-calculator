@@ -29,7 +29,7 @@ void shunt_op(struct operator_type *op, char *error_message);
 
 int isdigit_or_decimal(int c);
 
-double yard(char *s, char *error_message);
+float yard(char *s, char *error_message);
 
 struct operator_type *pop_opstack(char *error_message);
 
